@@ -4,19 +4,27 @@ import random
 
 # app = Flask(__name__)
 
-def fetch_random_games(game_tags, num_games=10):
-    df = pd.read_csv('Dataset\Cleaned_games.csv')
+def fetch_random_games(game_tags, user_id, num_games=100):
+    # Read datasets
+    game_data = pd.read_csv('Dataset\Cleaned_games.csv')
+    interaction_data = pd.read_csv(r'Dataset\user_item_matrix.csv')
 
-    similar_games = df[df['tags'].apply(lambda x: any(tag in x for tag in game_tags))]
+    # Filter games with specified tags
+    similar_games = game_data[game_data['tags'].apply(lambda x: any(tag in x for tag in game_tags))]
 
+    # Filter out games already interacted by the user
+    if user_id in interaction_data.columns:
+        user_interactions = interaction_data[user_id]
+        similar_games = similar_games[~similar_games['title'].isin(user_interactions[user_interactions == 1].index)]
 
+    # If there are no similar games or all similar games are already rated, return empty dictionary
     if len(similar_games) == 0:
         return {}
 
-
+    # Sample random games from the filtered list
     random_games = similar_games.sample(n=min(num_games, len(similar_games)))
 
-
+    # Create dictionary of random games
     random_games_dict = {title: 1 for title in random_games['title']}
 
     return random_games_dict
@@ -85,7 +93,7 @@ def content_based_recommendation(user_profile, random_games_im):
 
     return recommended_matrix
 
-def check_games(games):
+def check_games(games,user_id):
     print(games)
 
     game_tags = get_game_details(games)
@@ -105,7 +113,7 @@ def check_games(games):
 
     print(user_profile)
 
-    random_games = fetch_random_games(game_tags)
+    random_games = fetch_random_games(game_tags, user_id)
     print(random_games)
 
     random_games_im=generate_interaction_matrix(random_games, game_tags)
@@ -125,10 +133,10 @@ def check_games(games):
 if __name__ == '__main__':
     games = ['Escape Dead Island', 'BRINK: Agents of Change', "Monaco: What's Yours Is Mine"]
     user_rating = [2, 8, 10]
-
+    user_id = 58
     combined_dict = dict(zip(games, user_rating))
 
-    recommendation = check_games(combined_dict)
+    recommendation = check_games(combined_dict, user_id)
 
     print("Top 5 movie Recommendation")
     for games in recommendation:
