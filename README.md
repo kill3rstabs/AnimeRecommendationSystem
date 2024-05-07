@@ -1,1 +1,1 @@
-Anime Recommendation System
+Game Recommendation System
